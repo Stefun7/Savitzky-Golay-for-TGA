@@ -24,28 +24,33 @@ def choose_sheet(xls):
 
 def show_graph(T, TG, smooth_TG, dTG, sheet_name, results_dir):
 
-	fig, (ax1, ax2) = plt.subplots(
-		2, 1,
+	fig, (ax1, ax2, ax3) = plt.subplots(
+		3, 1,
 		sharex=True,
 		figsize=(10, 8)
 	)
 
 	# --- TG graph ---
 	ax1.plot(T, TG, color="blue", label="Raw TG")
-	ax1.plot(T, smooth_TG, color="green", label="Smoothed TG")
 
-	ax1.set_ylabel("Mass")
 	ax1.set_title(sheet_name)
+	ax1.set_ylabel("Mass")
 	ax1.legend()
 	ax1.grid(True)
 
-	# --- dTG graph ---
-	ax2.plot(T, dTG, color="red", label="dTG")
+	# --- smooth TG graph ---
+	ax2.plot(T, smooth_TG, color="green", label="Smoothed TG")
 
-	ax2.set_xlabel("Temperature")
-	ax2.set_ylabel("Derivative")
+	ax2.set_ylabel("Mass")
 	ax2.legend()
 	ax2.grid(True)
+	# --- dTG graph ---
+	ax3.plot(T, dTG, color="red", label="dTG")
+
+	ax3.set_xlabel("Temperature")
+	ax3.set_ylabel("Derivative")
+	ax3.legend()
+	ax3.grid(True)
 
 	plt.tight_layout()
 	fig.savefig(results_dir / f"{sheet_name}.png", dpi=300)
