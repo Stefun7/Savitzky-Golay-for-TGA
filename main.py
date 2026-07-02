@@ -49,19 +49,9 @@ def show_graph(T, TG, smooth_TG, dTG, sheet_name, results_dir):
 
 	plt.tight_layout()
 	fig.savefig(results_dir / f"{sheet_name}.png", dpi=300)
-	plt.show()
 
-def main():
-	FILE = "GGBS_TGA.xlsx"
-	if not Path(FILE).exists():
-		print(f"Error: file '{FILE}' not found")
-		return
-	xls = pd.ExcelFile(FILE)
 
-	sheet_name = None
-	while sheet_name is None:
-		sheet_name = choose_sheet(xls)
-
+def process_sheet(FILE, sheet_name):
 	df = pd.read_excel(FILE, sheet_name=sheet_name)
 	T = df.iloc[:, 0].to_numpy()
 	TG = df.iloc[:, 1].to_numpy()
@@ -74,7 +64,6 @@ def main():
 
 	# 2nd methode : smooth the TG and the dTG with S-G
 	smooth_TG = savgol_filter(TG, window_length=11, polyorder=3)
-	dTG = savgol_filter(TG, window_length=41, polyorder=3, deriv=1, delta=delta_T) # Need to have enough datas for the window_length
 	dTG = savgol_filter(smooth_TG, window_length=51, polyorder=3, deriv=1, delta=delta_T) #You can use this dTG to smooth the graph even more (don't know how trustful it is so make some tests !!)
 
 	results_dir = Path("results")
@@ -84,6 +73,25 @@ def main():
 	df["dTG"] = dTG
 	df.to_excel(output_file, index=False)
 	show_graph(T, TG, smooth_TG, dTG, sheet_name, results_dir)
+
+def main():
+	FILE = "GGBS_TGA.xlsx"
+	if not Path(FILE).exists():
+		print(f"Error: file '{FILE}' not found")
+		return
+	xls = pd.ExcelFile(FILE)
+
+	# does one sheet
+	# sheet_name = None
+	# while sheet_name is None:
+	# 	sheet_name = choose_sheet(xls)
+	# 	process_sheet(FILE, sheet_name)
+
+	# does all sheets
+	for sheet_name in xls.sheet_names:
+		process_sheet(FILE, sheet_name)
+
+	plt.show()
 
 if __name__ == "__main__":
 	main()
