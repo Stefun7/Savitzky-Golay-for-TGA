@@ -1,13 +1,14 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 from pathlib import Path
 
 """
 Some precisions:
-		. Savitzky requires : window_length < len(TG) on small datasets, otherwise itcrashes
+		. Savitzky requires : window_length < len(TG) on small datasets, otherwise it crashes
 		. Window_length must be odd. Larger = smoother but less details
-		. To smooth the prah, you can either increase window length, or use smooth_TG in dTG
+		. To smooth the graph, you can either increase window length, or use smooth_TG in dTG
 """
 
 def choose_sheet(xls):
@@ -21,7 +22,7 @@ def choose_sheet(xls):
 		print("Invalid choice")
 		return None
 
-def show_graph(T, TG, smooth_TG, dTG, sheet_name):
+def show_graph(T, TG, smooth_TG, dTG, sheet_name, results_dir):
 
 	fig, (ax1, ax2) = plt.subplots(
 		2, 1,
@@ -47,6 +48,7 @@ def show_graph(T, TG, smooth_TG, dTG, sheet_name):
 	ax2.grid(True)
 
 	plt.tight_layout()
+	fig.savefig(results_dir / f"{sheet_name}.png", dpi=300)
 	plt.show()
 
 def main():
@@ -64,11 +66,24 @@ def main():
 	T = df.iloc[:, 0].to_numpy()
 	TG = df.iloc[:, 1].to_numpy()
 
+	delta_T = T[1] - T[0] # Without this, the derivative is with respect to point index, not temperature
+
+	# 1st methode : smooth the TG with S-G and then derivative
+	# smooth_TG = savgol_filter(TG, window_length=11, polyorder=3)
+	# dTG = np.gradient(smooth_TG, T)
+
+	# 2nd methode : smooth the TG and the dTG with S-G
 	smooth_TG = savgol_filter(TG, window_length=11, polyorder=3)
-	delta_T = T[1] - T[0] #Without this, the derivative is with respect to point index, not temperature
-	dTG = savgol_filter(TG, window_length=41, polyorder=3, deriv=1, delta=delta_T)
-	# dTG = savgol_filter(smooth_TG, window_length=51, polyorder=3, deriv=1, delta=delta_T) #You can use this dTG to smooth the graph even more (don't know how trustful it is so make some tests !!)
-	show_graph(T, TG, smooth_TG, dTG, sheet_name)
+	dTG = savgol_filter(TG, window_length=41, polyorder=3, deriv=1, delta=delta_T) # Need to have enough datas for the window_length
+	dTG = savgol_filter(smooth_TG, window_length=51, polyorder=3, deriv=1, delta=delta_T) #You can use this dTG to smooth the graph even more (don't know how trustful it is so make some tests !!)
+
+	results_dir = Path("results")
+	results_dir.mkdir(exist_ok=True)
+	output_file = results_dir / f"{sheet_name}_processed.xlsx"
+	df["Smoothed TG"] = smooth_TG
+	df["dTG"] = dTG
+	df.to_excel(output_file, index=False)
+	show_graph(T, TG, smooth_TG, dTG, sheet_name, results_dir)
 
 if __name__ == "__main__":
 	main()
